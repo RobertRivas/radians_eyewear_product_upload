@@ -80,7 +80,7 @@ def attribute_post(list_of_skus, radians_catalog, parent_sku):
         ]
     }
 
-    print(wcapi.put(f"products/{product_id}", attribute_data).json())
+    # print(wcapi.put(f"products/{product_id}", attribute_data).json())
 
 
 def batch_variation_post_function(sku, price, color, parent_sku):
@@ -122,7 +122,7 @@ def batch_variation_post_function(sku, price, color, parent_sku):
 
     print(variation_batch_post)
 
-    print(wcapi.post(f"products/{product_id_prev}/variations/batch", variation_batch_post).json())
+    # print(wcapi.post(f"products/{product_id_prev}/variations/batch", variation_batch_post).json())
 
 
 radians_catalog = pd.read_excel(r'5036_2021_Radians_Industrial_PriceList_REV01 - FINAL.xlsx', header=78)
