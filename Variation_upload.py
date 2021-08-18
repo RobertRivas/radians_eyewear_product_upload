@@ -7,16 +7,36 @@ import pandas as pd
 
 from woocommerce import API
 
+
+
 from ast import literal_eval
 
-wcapi = API(
-    url=os.environ['URL'],
-    consumer_key=os.environ['CONSUMER_KEY'],
-    consumer_secret=os.environ['CONSUMER_SECRET'],
-    version=os.environ['VERSION'],
-    wp_api=True,
-    timeout=30
-)
+import requests
+from requests.auth import HTTPBasicAuth
+# from requests.packages.urllib3.exceptions import InsecureRequestWarning
+# requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+
+session = requests.Session()
+session.auth = (os.environ['CONSUMER_KEY'], os.environ['CONSUMER_SECRET'])
+
+session.verify = False
+URL = f"{os.environ['URL']}"+"/wp-json/"+f"{os.environ['VERSION']}/"
+response = session.get(url=URL)
+
+print(response)
+# couldn't use woo-commerce library because of issue with requests default changing white spaces to +.
+#
+# So had to use just straight requests library to override default setting
+
+# wcapi = API(
+#     url=os.environ['URL'],
+#     consumer_key=os.environ['CONSUMER_KEY'],
+#     consumer_secret=os.environ['CONSUMER_SECRET'],
+#     version=os.environ['VERSION'],
+#     wp_api=True,
+#     timeout=30
+# )
 
 def profit_margin(csv_price):
 
