@@ -22,14 +22,14 @@ def profit_margin(csv_price):
 
     # 27 percent profit margin col II
 
-    equip_direct_cost = csv_price.astype(float)
+    equip_direct_cost = csv_price
     twenty_five_percent_profit_margin_function = (equip_direct_cost / (1 - 0.27))
     profit_margin_calculation = round(twenty_five_percent_profit_margin_function, 2)
 
     return profit_margin_calculation
 
 
-def variable_switch_function(parent_sku):
+def variable_switch_function(parent_sku, wcapi):
 
     data = {
         "type": "variable"
@@ -37,15 +37,26 @@ def variable_switch_function(parent_sku):
 
     # updates product to variable product type
 
+    print(parent_sku)
+    parent_sku = parent_sku.replace(' ', '%20')
+    parent_sku = parent_sku.encode("ascii", "ignore")
+    parent_sku = "{0}{1}".format(parent_sku, '')
+    parent_sku = parent_sku.lstrip('b,\'')
+    parent_sku = parent_sku.rstrip('\'')
+
+    print(parent_sku)
+
+    print(wcapi.get(f"products?sku={parent_sku}").json())
+
     json_for_id = wcapi.get(f"products?sku={parent_sku}").json()
 
-    product_dict_prev = json_for_id[0]
-    product_id_prev = product_dict_prev['id']
+    product_dict = json_for_id[0]
+    product_id = product_dict['id']
 
     # print(wcapi.put(f"products/{product_id_prev}", data).json())
 
 
-def attribute_post(list_of_skus, radians_catalog, parent_sku):
+def attribute_post(list_of_skus, radians_catalog, parent_sku, wcapi):
 
     colors = []
     for i in list_of_skus:
@@ -80,41 +91,63 @@ def attribute_post(list_of_skus, radians_catalog, parent_sku):
         ]
     }
 
+    print(attribute_data)
+
     # print(wcapi.put(f"products/{product_id}", attribute_data).json())
 
 
-def batch_variation_post_function(sku, price, color, parent_sku):
+def batch_variation_post_function(sku_array, radians_catalog, parent_sku, wcapi):
     variation_dict = []
 
     variable_switch_function(parent_sku)
 
-    price_profit_margined = profit_margin(price)
-    # color = color.tolist()
+    for i in sku_array:
 
-    variation_dict.append(
-        {
-            "sku": sku.iloc[0],
-            "regular_price": price_profit_margined.iloc[0],
-            "weight": 0.8,
-            "attributes": [
-                {
-                    "name": "Color",
-                    # need to remove prefix instead of strip
-                    "option": color
-                }
-            ]
-        }
-    )
+        i = i.upper()
+        i = i.strip()
+
+        print(i)
+
+        price = radians_catalog['Col II'].loc[radians_catalog['PART'].str.contains(pat=i, na=False)]
+        print(price.iloc[0])
+        price = price.iloc[0]
+        print(price)
+        color = radians_catalog['DESCRIPTION'].loc[radians_catalog['PART'].str.contains(pat=i, na=False)]
+        print(color.iloc[0])
+        color = color.iloc[0]
+        color = color.encode("ascii", "ignore")
+        color = "{0}{1}".format(color, '')
+        color = color.lstrip('b,\'')
+        color = color.rstrip('\'')
+        print(color)
+
+        price_profit_margined = profit_margin(price)
+        print(price_profit_margined)
+
+        variation_dict.append(
+            {
+                "sku": i,
+                "regular_price": price_profit_margined,
+                "weight": 0.1,
+                "attributes": [
+                    {
+                        "name": "Color",
+
+                        "option": color
+                    }
+                ]
+            }
+        )
 
     json_for_id = wcapi.get(f"products?sku={parent_sku}").json()
-    product_dict_prev = json_for_id[0]
-    product_id_prev = product_dict_prev['id']
+    product_dict = json_for_id[0]
+    product_id = product_dict['id']
 
     variation_batch_post = {
         "create": variation_dict,
         "update": [
             {
-                "id": product_id_prev
+                "id": product_id
 
             }
         ]
@@ -149,9 +182,12 @@ for index, row in woo_commerce_category_export.iterrows():
         print(type(literal_eval(variations_string.iloc[0])))
         sku_array = literal_eval(variations_string.iloc[0])
 
-        variable_switch_function(row['SKU'])
+        variable_switch_function(row['SKU'], wcapi)
 
-        attribute_post(sku_array, radians_catalog, row['SKU'])
+        attribute_post(sku_array, radians_catalog, row['SKU'], wcapi)
+
+        print(row['SKU'])
+        batch_variation_post_function(sku_array, radians_catalog, row['SKU'], wcapi)
 
 
 
